@@ -26,15 +26,14 @@ class Network {
     }
 
     bool const IsSingle(int id) {
-        return groups.find(id) == groups.cend();
+        return (groups.find(id) == groups.cend()) && (parents[id] == id);
     }
 
     size_t const GetCurrentSize(int id) {
-        return groups[id].size();
+        return (IsSingle(id)) ? 1 : groups[id].size();
     }
+
     size_t const GetDeltaSize(int parent, int other) {
-        if (IsSingle(parent)) return GetCurrentSize(other);
-        else if (IsSingle(other)) return GetCurrentSize(parent);
         return GetCurrentSize(other) * GetCurrentSize(parent);
     }
 
@@ -42,6 +41,7 @@ class Network {
         parents[other] = parent;
         if (groups.find(parent) == groups.cend()) {
             groups[parent] = set<int>();
+            groups[parent].insert(parent);
         }
         
         if (groups.find(other) == groups.cend()) {
@@ -62,12 +62,15 @@ public :
         }
     }
     void Input(int from, int to) {
+
+        cout << from << ' ' << to << endl;
         // If They are already connected, no need to calculation
         // Otherwise try to calculate current useful value  and adjust group.
         if (!Connected(from, to)) {
             if (IsSingle(from) && IsSingle(to)) {
                 parents[to] = from;
                 groups[from] = set<int>();
+                groups[from].insert(from);
                 groups[from].insert(to);
                 currentUseful++;
             } else {
@@ -79,15 +82,26 @@ public :
 
                 merge(parent, other);
                 currentUseful += deltaSize;
-                
+                cout << "parent group size" << groups[parent].size() << endl;
             }
         }
+        
         scores.push_back(currentUseful);
     }
-    void Calculate() {
+    void Calculate(size_t const M) {
+        list<uint64_t> tempList;
+        uint64_t maxUseful = N * (N - 1) / 2;
+        tempList.push_back(GetMaxUseful());
+        auto ite = scores.begin();
+        for (size_t i = 1; i < M; i++) {            
+            tempList.push_back(maxUseful - *ite);
+            ite++;
+        }
+        scores = tempList;
     }
 
-    void Output() const {
+    void Output() {
+        scores.reverse();
         for (uint64_t score :  scores) {
             cout << score << endl;
         }
@@ -97,11 +111,17 @@ int main() {
     auto const N(in<size_t>()), M(in<size_t>());
     Network islands(N);
     islands.initialize();
+    int A[M], B[M];
     for (unsigned int i = 0; i < M; i++) {
-        int const A(in()), B(in());
-        islands.Input(A, B);
+        A[i] = in();
+        B[i] = in();
     }
-    islands.Calculate();
+
+    cout << "Reverse" << endl;
+    for (unsigned int i = M; 0 < i; i--) {
+        islands.Input(A[i - 1], B[i - 1]);
+    }
+    islands.Calculate(M);
     islands.Output();
     return 0;
 }
