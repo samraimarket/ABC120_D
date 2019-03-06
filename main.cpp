@@ -135,7 +135,7 @@ int main() {
     Network islands(N);
 
     // Input each value as inversed.
-    for (unsigned int i = M; 0 < i; i--) islands.Input(A[i - 1], B[i - 1]);
+    for (size_t i = M; 0 < i; i--) islands.Input(A[i - 1], B[i - 1]);
 
     islands.Calculate();
     islands.Output();
