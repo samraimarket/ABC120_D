@@ -63,7 +63,6 @@ public :
     }
     void Input(int from, int to) {
 
-        cout << from << ' ' << to << endl;
         // If They are already connected, no need to calculation
         // Otherwise try to calculate current useful value  and adjust group.
         if (!Connected(from, to)) {
@@ -76,13 +75,11 @@ public :
             } else {
 
                 int const parent = min(parents[from], parents[to]);
-                cout << parents[from] << ' ' << parents[to] << ' ' << to << endl;
                 int const other = (parent == parents[from]) ? parents[to] : parents[from];  
                 size_t deltaSize = GetDeltaSize(parent, other);
 
                 merge(parent, other);
                 currentUseful += deltaSize;
-                cout << "parent group size" << groups[parent].size() << endl;
             }
         }
         
@@ -117,7 +114,6 @@ int main() {
         B[i] = in();
     }
 
-    cout << "Reverse" << endl;
     for (unsigned int i = M; 0 < i; i--) {
         islands.Input(A[i - 1], B[i - 1]);
     }
