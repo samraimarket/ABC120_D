@@ -16,7 +16,7 @@ class Network {
     size_t const N;
     map<int, int> parents;
     map<int, set<int>> groups;
-    list<uint64_t> uncalculatedScores;
+    list<uint64_t> scores;
     uint64_t currentUseful;
     uint64_t const GetMaxUseful() {
         return (uint64_t)N * (N - 1) / 2;
@@ -82,11 +82,13 @@ public :
                 
             }
         }
-        uncalculatedScores.push_back(currentUseful);
+        scores.push_back(currentUseful);
+    }
+    void Calculate() {
     }
 
-    void Output() {
-        for (uint64_t score :  uncalculatedScores) {
+    void Output() const {
+        for (uint64_t score :  scores) {
             cout << score << endl;
         }
     }
@@ -99,6 +101,7 @@ int main() {
         int const A(in()), B(in());
         islands.Input(A, B);
     }
+    islands.Calculate();
     islands.Output();
     return 0;
 }
