@@ -26,7 +26,7 @@ class Network {
     }
 
     bool const IsSingle(int id) {
-        return parents[id] == id;
+        return groups.find(id) == groups.cend();
     }
 
     size_t const GetCurrentSize(int id) {
@@ -57,12 +57,11 @@ class Network {
 public :
     Network(size_t N_p) : N(N_p), currentUseful(0) {}
     void initialize() {
-        for (size_t i = 0; i < N;i++) {
+        for (size_t i = 0; i <= N;i++) {
             parents[i] = i;
         }
     }
     void Input(int from, int to) {
-        
         // If They are already connected, no need to calculation
         // Otherwise try to calculate current useful value  and adjust group.
         if (!Connected(from, to)) {
@@ -71,13 +70,16 @@ public :
                 groups[from] = set<int>();
                 groups[from].insert(to);
                 currentUseful++;
-                cout <<' ' << currentUseful << endl;
             } else {
+
                 int const parent = min(parents[from], parents[to]);
+                cout << parents[from] << ' ' << parents[to] << ' ' << to << endl;
                 int const other = (parent == parents[from]) ? parents[to] : parents[from];  
                 size_t deltaSize = GetDeltaSize(parent, other);
-                merge(from, to);
+
+                merge(parent, other);
                 currentUseful += deltaSize;
+                
             }
         }
         uncalculatedScores.push_back(currentUseful);
@@ -93,8 +95,9 @@ int main() {
     auto const N(in<size_t>()), M(in<size_t>());
     Network islands(N);
     islands.initialize();
-    for (unsigned int i = 0; i < M; i++) {  
-        islands.Input(in(), in());
+    for (unsigned int i = 0; i < M; i++) {
+        int const A(in()), B(in());
+        islands.Input(A, B);
     }
     islands.Output();
     return 0;
