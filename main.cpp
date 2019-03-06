@@ -18,27 +18,20 @@ class UnionFind {
         return (groups.find(id) == groups.cend()) && (parents[id] == id);
     }
 
-public :
-
-    UnionFind(size_t N) {
-        for (size_t i = 0; i <= N;i++) parents[i] = i;
-    }
-   
     size_t const GetCurrentSize(int id) {
         return (IsSingle(id)) ? 1 : groups[id].size();
     }
 
-    bool const InSameGroup(int from, int to) {
-        return (parents[from] == parents[to]);
-    }
-
-    int64_t merge(int id1, int id2) {
+    struct MergeTarget {
+        int const parent;
+        int const other;
+        MergeTarget(int x, int y) : parent(min(x, y)), other(max(x, y)) {}        
+    };
+    
+    void merge(MergeTarget const& targets) {
         
-        const int parent = min(id1, id2);
-        const int other  = max(id1, id2);
-
-        // Save delta size before calculate them.
-        size_t const deltaSize =  GetCurrentSize(other) * GetCurrentSize(parent);
+        const int parent = targets.parent;
+        const int other  = targets.other;
 
         if (IsSingle(parent)) {
             groups[parent] = set<int>();
@@ -60,11 +53,33 @@ public :
             groups[parent].insert(groups[other].begin(), groups[other].end());
             groups.erase(other);
         }
-
-        return deltaSize;
     }
 
-    int GetParent(int id) const {return parents.find(id)->second;}
+public :
+
+    UnionFind(size_t N) {
+        for (size_t i = 0; i <= N; i++) parents[i] = i;
+    }
+  
+    uint64_t TryMerge(int from, int to) {
+   
+        if (parents.find(from) == parents.cend() || parents.find(to) == parents.cend()) {
+            cerr << "Not such element of " << from << " or " << to << "!!" << endl;
+        }
+
+        // If They are in same group, the useful point will not be increased.
+        if (parents[from] == parents[to]) return 0;
+
+        MergeTarget const targets(parents[from], parents[to]);
+
+        // Save delta size before merge them.
+        size_t const deltaSize =  GetCurrentSize(targets.parent) * GetCurrentSize(targets.other); 
+
+        merge(targets);        
+
+        // Otherwise try to calculate current useful value  and adjust group.
+        return deltaSize;
+    }
 };
 
 class Network {
@@ -79,19 +94,11 @@ public :
 
     void Input(int from, int to) {
 
-        // If They are in same group, the useful point will not be increased.
-        if (!unionFind.InSameGroup(from, to)) {
-
-            // Otherwise try to calculate current useful value  and adjust group.
-            currentUseful +=  unionFind.merge(unionFind.GetParent(from), unionFind.GetParent(to));
-        }
-
+        currentUseful +=  unionFind.TryMerge(from, to);        
         scores.push_back(currentUseful);
     }
 
     void Calculate() {
-
-        //scores.push_back(GetMaxUseful());
         
         // Required elements are only 1 ~ N -1
         auto ite = scores.begin();
