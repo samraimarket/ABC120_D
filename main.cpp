@@ -1,9 +1,7 @@
 #include <iostream>
-#include <vector>
 #include <list>
 #include <set>
 #include <map>
-#include <algorithm>
 using namespace std;
 template <typename T = int>
 T in() {
@@ -16,108 +14,89 @@ class UnionFind {
     map<int, int> parents;
     map<int, set<int>> groups;
 
-    void Initialize(int id) {
-        groups[id] = set<int>();
-        groups[id].insert(id);
-    }
-
     bool const IsSingle(int id) {
         return (groups.find(id) == groups.cend()) && (parents[id] == id);
     }
 
-    bool const Connected(int from, int to) {
-        return parents[from] == parents[to];
-    }
-
 public :
+
     UnionFind(size_t N) {
-        for (size_t i = 0; i <= N;i++) {
-            parents[i] = i;
-        }
+        for (size_t i = 0; i <= N;i++) parents[i] = i;
     }
    
     size_t const GetCurrentSize(int id) {
         return (IsSingle(id)) ? 1 : groups[id].size();
     }
 
-    size_t const GetDeltaSize(int parent, int other) {
-        return GetCurrentSize(other) * GetCurrentSize(parent);
+    bool const InSameGroup(int from, int to) {
+        return (parents[from] == parents[to]);
     }
 
-    void merge(int parent, int other) {
-
-        parents[other] = parent;
-        if (groups.find(parent) == groups.cend()) Initialize(parent);
+    int64_t merge(int id1, int id2) {
         
-        if (groups.find(other) == groups.cend()) {
+        const int parent = min(id1, id2);
+        const int other  = max(id1, id2);
+
+        // Save delta size before calculate them.
+        size_t const deltaSize =  GetCurrentSize(other) * GetCurrentSize(parent);
+
+        if (IsSingle(parent)) {
+            groups[parent] = set<int>();
+            groups[parent].insert(parent);
+        }
+       
+        if (IsSingle(other)) {
            
             groups[parent].insert(other);
+            parents[other] = parent;
 
-        // When the other owns group
+        // When the other is not single, owns group
         } else {
          
             // Change each parent elements of group other   
             for (int i : groups[other]) parents[i] = parent;
 
-            // Then merge otehr group to parent
+            // Then merge all elements in other group to parent group.
             groups[parent].insert(groups[other].begin(), groups[other].end());
             groups.erase(other);
         }
+
+        return deltaSize;
     }
 
-    uint64_t Input(int from, int to) {
-
-        if (!Connected(from, to)) {
-            if (IsSingle(from) && IsSingle(to)) {
-
-                Initialize(from);
-                parents[to] = from;
-                groups[from].insert(to);
-                return 1;
-
-            } else {
-
-                int const parent = min(parents[from], parents[to]);
-                int const other = (parent == parents[from]) ? parents[to] : parents[from];  
-                size_t const deltaSize = GetDeltaSize(parent, other);
-
-                merge(parent, other);
-                return deltaSize;
-            }
-        }
-        return 0;
-    }
+    int GetParent(int id) const {return parents.find(id)->second;}
 };
 
 class Network {
-    size_t const N;
+
+    uint64_t const maxUseful;
     list<uint64_t> scores;
     uint64_t currentUseful;
     UnionFind unionFind;
     
 public :
-    Network(size_t N_p) : N(N_p), currentUseful(0), unionFind(N) {}
+    Network(size_t N) : maxUseful((uint64_t)N * (N - 1) / 2), currentUseful(0), unionFind(N) {}
 
     void Input(int from, int to) {
 
-        // If They are already connected, no need to calculate.
-        // Otherwise try to calculate current useful value  and adjust group.
-        currentUseful += unionFind.Input(from, to);
+        // If They are in same group, the useful point will not be increased.
+        if (!unionFind.InSameGroup(from, to)) {
+
+            // Otherwise try to calculate current useful value  and adjust group.
+            currentUseful +=  unionFind.merge(unionFind.GetParent(from), unionFind.GetParent(to));
+        }
+
         scores.push_back(currentUseful);
     }
 
     void Calculate() {
-
-
-        // At final(id == N) unuseful point must be max useful value.
-        uint64_t const maxUseful = N * (N - 1) / 2;
 
         //scores.push_back(GetMaxUseful());
         
         // Required elements are only 1 ~ N -1
         auto ite = scores.begin();
 
-        // Remember last one.
+        // Remember iterator of last one.
         auto end = scores.end();
         end--;
 
