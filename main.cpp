@@ -10,9 +10,15 @@ T in() {
     return temp;
 }
 
+struct MergeTarget {
+    int const parent;
+    int const other;
+    MergeTarget(int x, int y) : parent(min(x, y)), other(max(x, y)) {}        
+};
+
 class UnionFind {
     map<int, int> parents;
-    map<int, set<int>> groups;
+    map<int, list<int>> groups;
 
     bool const IsSingle(int id) {
         return (groups.find(id) == groups.cend()) && (parents[id] == id);
@@ -21,26 +27,20 @@ class UnionFind {
     size_t const GetCurrentSize(int id) {
         return (IsSingle(id)) ? 1 : groups[id].size();
     }
-
-    struct MergeTarget {
-        int const parent;
-        int const other;
-        MergeTarget(int x, int y) : parent(min(x, y)), other(max(x, y)) {}        
-    };
-    
+ 
     void merge(MergeTarget const& targets) {
         
         const int parent = targets.parent;
         const int other  = targets.other;
 
         if (IsSingle(parent)) {
-            groups[parent] = set<int>();
-            groups[parent].insert(parent);
+            groups[parent] = list<int>();
+            groups[parent].push_back(parent);
         }
        
         if (IsSingle(other)) {
            
-            groups[parent].insert(other);
+            groups[parent].push_back(other);
             parents[other] = parent;
 
         // When the other is not single, owns group
@@ -50,7 +50,7 @@ class UnionFind {
             for (int i : groups[other]) parents[i] = parent;
 
             // Then merge all elements in other group to parent group.
-            groups[parent].insert(groups[other].begin(), groups[other].end());
+            groups[parent].insert(groups[parent].end(), groups[other].begin(), groups[other].end());
             groups.erase(other);
         }
     }
