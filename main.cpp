@@ -10,74 +10,80 @@ T in() {
     return temp;
 }
 
-struct MergeTarget {
-    int const parent;
-    int const other;
-    MergeTarget(int x, int y) : parent(min(x, y)), other(max(x, y)) {}        
+class Merger {
+
+    map<int, list<int>>::iterator master;
+    map<int, int>& parents;
+
+public:
+    Merger(map<int, list<int>>::iterator target, map<int, int>& parents_p) : master(target), parents(parents_p) {}
+
+    void Merge(int target) {
+        master->second.push_back(target);
+        parents[target] = master->first;
+    }
+
+    void Merge(list<int> const& slave) {
+
+        // Change each parent elements of group other   
+        for (int i : slave) parents[i] = master->first;
+
+        // Then merge all elements in other group to parent group.
+        master->second.insert(master->second.end(), slave.begin(), slave.end());
+    }
 };
 
 class UnionFind {
-    map<int, int> parents;
+    map<int, int> masters;
     map<int, list<int>> groups;
 
-    bool const IsSingle(int id) {
-        return (groups.find(id) == groups.cend()) && (parents[id] == id);
+    bool IsSingle(int id) {
+        return groups.find(masters[id]) == groups.cend();
     }
 
-    size_t const GetCurrentSize(int id) {
-        return (IsSingle(id)) ? 1 : groups[id].size();
-    }
- 
-    void merge(MergeTarget const& targets) {
-        
-        const int parent = targets.parent;
-        const int other  = targets.other;
-
-        if (IsSingle(parent)) {
-            groups[parent] = list<int>();
-            groups[parent].push_back(parent);
-        }
-       
-        if (IsSingle(other)) {
-           
-            groups[parent].push_back(other);
-            parents[other] = parent;
-
-        // When the other is not single, owns group
-        } else {
-         
-            // Change each parent elements of group other   
-            for (int i : groups[other]) parents[i] = parent;
-
-            // Then merge all elements in other group to parent group.
-            groups[parent].insert(groups[parent].end(), groups[other].begin(), groups[other].end());
-            groups.erase(other);
-        }
+    size_t GetCurrentSize(int id) {
+        return IsSingle(id) ? 1 : groups[id].size();
     }
 
 public :
 
     UnionFind(size_t N) {
-        for (size_t i = 0; i <= N; i++) parents[i] = i;
+        for (size_t i = 0; i <= N; i++) masters[i] = i;
     }
   
-    uint64_t TryMerge(int from, int to) {
+    uint64_t Merge(int from, int to) {
    
-        if (parents.find(from) == parents.cend() || parents.find(to) == parents.cend()) {
+        if (masters.find(from) == masters.cend() || masters.find(to) == masters.cend()) {
             cerr << "Not such element of " << from << " or " << to << "!!" << endl;
         }
 
         // If They are in same group, the useful point will not be increased.
-        if (parents[from] == parents[to]) return 0;
+        if (masters[from] == masters[to]) return 0;
 
-        MergeTarget const targets(parents[from], parents[to]);
+        int const parent = min(masters[from], masters[to]);
+        int const other = max(masters[from], masters[to]);
 
         // Save delta size before merge them.
-        size_t const deltaSize =  GetCurrentSize(targets.parent) * GetCurrentSize(targets.other); 
+        size_t const deltaSize =  GetCurrentSize(parent) * GetCurrentSize(other); 
 
-        merge(targets);        
+        // When it is not exist. make target group.
+        if (IsSingle(parent)) {
+            groups[parent] = list<int>();
+            groups[parent].push_back(parent);
+        }
 
-        // Otherwise try to calculate current useful value  and adjust group.
+        Merger merger(groups.find(parent), masters);
+
+        if (IsSingle(other)) {
+
+            merger.Merge(other);
+        } else {
+    
+            auto ite = groups.find(other);
+            merger.Merge(ite->second);
+            groups.erase(ite);
+        }
+
         return deltaSize;
     }
 };
@@ -94,7 +100,7 @@ public :
 
     void Input(int from, int to) {
 
-        currentUseful +=  unionFind.TryMerge(from, to);        
+        currentUseful +=  unionFind.Merge(from, to);        
         scores.push_back(currentUseful);
     }
 
