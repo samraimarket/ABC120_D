@@ -129,7 +129,7 @@ public :
         scores.push_back(maxUseful);
     }
 
-    void Output() {
+    void Output() const {
         for (uint64_t score :  scores) cout << score << endl;
     }
 };
