@@ -12,37 +12,37 @@ T in() {
 
 class Merger {
 
-    map<int, list<int>>::iterator master;
+    map<int, set<int>>::iterator master;
     map<int, int>& parents;
 
 public:
-    Merger(map<int, list<int>>::iterator target, map<int, int>& parents_p) : master(target), parents(parents_p) {}
+    Merger(map<int, set<int>>::iterator target, map<int, int>& parents_p) : master(target), parents(parents_p) {}
 
     void Merge(int target) {
-        master->second.push_back(target);
+        master->second.insert(target);
         parents[target] = master->first;
     }
 
-    void Merge(list<int> const& slave) {
+    void Merge(set<int> const& slave) {
 
         // Change each parent elements of group other   
         for (int i : slave) parents[i] = master->first;
 
         // Then merge all elements in other group to parent group.
-        master->second.insert(master->second.end(), slave.begin(), slave.end());
+        master->second.insert( slave.begin(), slave.end());
     }
 };
 
 class UnionFind {
     map<int, int> masters;
-    map<int, list<int>> groups;
+    map<int, set<int>> groups;
 
-    bool IsSingle(int id) {
-        return groups.find(masters[id]) == groups.cend();
+    bool IsSingle(int id) const {
+        return groups.find(masters.find(id)->first) == groups.cend();
     }
 
-    size_t GetCurrentSize(int id) {
-        return IsSingle(id) ? 1 : groups[id].size();
+    uint64_t GetCurrentSize(int id) const {
+        return IsSingle(id) ? 1 : groups.find(id)->second.size();
     }
 
 public :
@@ -50,41 +50,40 @@ public :
     UnionFind(size_t N) {
         for (size_t i = 0; i <= N; i++) masters[i] = i;
     }
-  
-    uint64_t Merge(int from, int to) {
+ 
+    struct MergeTarget {
+        int const parent;
+        int const other;
+        MergeTarget(int parent1, int parent2) : parent(min(parent1, parent2)), other(max(parent1, parent2)) {}
+    };
+
+    uint64_t GetDeltaUseful(MergeTarget const& mergeTarget) const {
+        return GetCurrentSize(mergeTarget.parent) * GetCurrentSize(mergeTarget.other); 
+    }
+
+    void Merge(MergeTarget const& target) {
    
-        if (masters.find(from) == masters.cend() || masters.find(to) == masters.cend()) {
-            cerr << "Not such element of " << from << " or " << to << "!!" << endl;
-        }
-
-        // If They are in same group, the useful point will not be increased.
-        if (masters[from] == masters[to]) return 0;
-
-        int const parent = min(masters[from], masters[to]);
-        int const other = max(masters[from], masters[to]);
-
-        // Save delta size before merge them.
-        size_t const deltaSize =  GetCurrentSize(parent) * GetCurrentSize(other); 
-
         // When it is not exist. make target group.
-        if (IsSingle(parent)) {
-            groups[parent] = list<int>();
-            groups[parent].push_back(parent);
+        if (IsSingle(target.parent)) {
+            groups[target.parent] = set<int>();
+            groups[target.parent].insert(target.parent);
         }
 
-        Merger merger(groups.find(parent), masters);
+        Merger merger(groups.find(target.parent), masters);
 
-        if (IsSingle(other)) {
+        if (IsSingle(target.other)) {
 
-            merger.Merge(other);
+            merger.Merge(target.other);
         } else {
     
-            auto ite = groups.find(other);
+            auto ite = groups.find(target.other);
             merger.Merge(ite->second);
             groups.erase(ite);
         }
+    }
 
-        return deltaSize;
+    MergeTarget GetMergeTarget (int from, int to) const {
+        return MergeTarget(masters.find(from)->second, masters.find(to)->second);
     }
 };
 
@@ -100,7 +99,13 @@ public :
 
     void Input(int from, int to) {
 
-        currentUseful +=  unionFind.Merge(from, to);        
+        UnionFind::MergeTarget const mergeTarget = unionFind.GetMergeTarget(from, to);
+
+        if (mergeTarget.parent != mergeTarget.other) {
+            currentUseful += unionFind.GetDeltaUseful(mergeTarget);
+            unionFind.Merge(mergeTarget);        
+        }
+
         scores.push_back(currentUseful);
     }
 
