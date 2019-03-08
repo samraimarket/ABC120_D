@@ -29,7 +29,7 @@ public:
         for (int i : slave) parents[i] = master->first;
 
         // Then merge all elements in other group to parent group.
-        master->second.insert(master->second.end() , slave.begin(), slave.end());
+        master->second.insert(master->second.end() , slave.cbegin(), slave.cend());
     }
 };
 
@@ -137,7 +137,7 @@ public :
 void Output(deque<uint64_t> const& scores, uint64_t n) {
 
     uint64_t const maxUseful(n * (n - 1) / 2);
-    auto ite = scores.end();
+    auto ite = scores.cend();
     ite--;
 
     // Output calculated value from back.
