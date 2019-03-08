@@ -109,13 +109,12 @@ public :
 
 class Network {
 
-    uint64_t const maxUseful;
     deque<uint64_t> scores;
     uint64_t currentUseful;
     UnionFind unionFind;
     
 public :
-    Network(size_t N) : maxUseful((uint64_t)N * (N - 1) / 2), currentUseful(0), unionFind(N) {}
+    Network(size_t N) : currentUseful(0), unionFind(N) {}
 
     void Input(int from, int to) {
 
@@ -128,31 +127,27 @@ public :
 
         scores.push_back(currentUseful);
     }
-
-    void Calculate() {
-        
-        // Required elements are only 1 ~ N -1
-        auto ite = scores.begin();
-
-        // Remember iterator of last one.
-        auto end = scores.end();
-        end--;
-
-        // Overwrite each elements to calculated one.
-        for (; ite != end ; ite++) *ite = (maxUseful - *ite);
-
-        // so delete last one.
-        scores.erase(end);
-
-        // insert max useful after reversing
-        reverse(scores.begin(), scores.end());
-        scores.push_back(maxUseful);
-    }
-
-    void Output() const {
-        for (uint64_t score :  scores) cout << score << endl;
+    
+    deque<uint64_t> const& GetScores() const {
+        return scores;
     }
 };
+
+
+void Output(deque<uint64_t> const& scores, uint64_t n) {
+
+    uint64_t const maxUseful(n * (n - 1) / 2);
+    auto ite = scores.end();
+    ite--;
+
+    // Output calculated value from back.
+    while (ite != scores.cbegin()) {
+        ite--; 
+        cout << maxUseful - *ite << endl;
+    };
+   
+    cout << maxUseful << endl;
+}
 
 int main() {
     auto const N(in<size_t>()), M(in<size_t>());
@@ -168,8 +163,7 @@ int main() {
     // Input each value as inversed.
     for (size_t i = M; 0 < i; i--) islands.Input(A[i - 1], B[i - 1]);
 
-    islands.Calculate();
-    islands.Output();
+    Output(islands.GetScores(), N);
     return 0;
 }
 
