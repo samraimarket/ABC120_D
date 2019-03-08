@@ -33,17 +33,44 @@ public:
     }
 };
 
-class UnionFind {
-    map<int, int> masters;
+
+// Wrapping map<int, set<int>>
+class Groups {
+    
     map<int, set<int>> groups;
 
+public:
     bool IsSingle(int id) const {
-        return groups.find(masters.find(id)->first) == groups.cend();
+        return groups.find(id) == groups.cend();
     }
 
     uint64_t GetCurrentSize(int id) const {
         return IsSingle(id) ? 1 : groups.find(id)->second.size();
     }
+
+    map<int, set<int>>::const_iterator Find(int target) const {
+        return groups.find(target);
+    }
+
+    map<int, set<int>>::iterator GetMaster(int target) {
+
+        auto ite = groups.find(target);
+        if (ite != groups.cend()) return ite;
+
+        /// Not excist, return after create it.
+        groups[target] = set<int>();
+        groups[target].insert(target);
+        return groups.find(target);
+    }
+
+    void erase(int target) {
+        groups.erase(target);
+    }
+};
+
+class UnionFind {
+    map<int, int> masters;
+    Groups groups;
 
 public :
 
@@ -58,27 +85,20 @@ public :
     };
 
     uint64_t GetDeltaUseful(MergeTarget const& mergeTarget) const {
-        return GetCurrentSize(mergeTarget.parent) * GetCurrentSize(mergeTarget.other); 
+        return groups.GetCurrentSize(mergeTarget.parent) * groups.GetCurrentSize(mergeTarget.other); 
     }
 
     void Merge(MergeTarget const& target) {
-   
-        // When it is not exist. make target group.
-        if (IsSingle(target.parent)) {
-            groups[target.parent] = set<int>();
-            groups[target.parent].insert(target.parent);
-        }
+  
+        Merger merger(groups.GetMaster(target.parent), masters);
 
-        Merger merger(groups.find(target.parent), masters);
-
-        if (IsSingle(target.other)) {
+        if (groups.IsSingle(target.other)) {
 
             merger.Merge(target.other);
         } else {
-    
-            auto ite = groups.find(target.other);
-            merger.Merge(ite->second);
-            groups.erase(ite);
+   
+            merger.Merge(groups.Find(target.other)->second);
+            groups.erase(target.other);
         }
     }
 
