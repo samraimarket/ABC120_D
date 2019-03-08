@@ -1,7 +1,7 @@
 #include <iostream>
-#include <list>
-#include <set>
 #include <map>
+#include <deque>
+#include <algorithm>
 using namespace std;
 template <typename T = int>
 T in() {
@@ -12,32 +12,32 @@ T in() {
 
 class Merger {
 
-    map<int, set<int>>::iterator master;
+    map<int, deque<int>>::iterator master;
     map<int, int>& parents;
 
 public:
-    Merger(map<int, set<int>>::iterator target, map<int, int>& parents_p) : master(target), parents(parents_p) {}
+    Merger(map<int, deque<int>>::iterator target, map<int, int>& parents_p) : master(target), parents(parents_p) {}
 
     void Merge(int target) {
-        master->second.insert(target);
+        master->second.push_back(target);
         parents[target] = master->first;
     }
 
-    void Merge(set<int> const& slave) {
+    void Merge(deque<int> const& slave) {
 
         // Change each parent elements of group other   
         for (int i : slave) parents[i] = master->first;
 
         // Then merge all elements in other group to parent group.
-        master->second.insert( slave.begin(), slave.end());
+        master->second.insert(master->second.end() , slave.begin(), slave.end());
     }
 };
 
 
-// Wrapping map<int, set<int>>
+// Wrapping map<int, deque<int>>
 class Groups {
     
-    map<int, set<int>> groups;
+    map<int, deque<int>> groups;
 
 public:
     bool IsSingle(int id) const {
@@ -48,18 +48,18 @@ public:
         return IsSingle(id) ? 1 : groups.find(id)->second.size();
     }
 
-    map<int, set<int>>::const_iterator Find(int target) const {
+    map<int, deque<int>>::const_iterator Find(int target) const {
         return groups.find(target);
     }
 
-    map<int, set<int>>::iterator GetMaster(int target) {
+    map<int, deque<int>>::iterator GetMaster(int target) {
 
         auto ite = groups.find(target);
         if (ite != groups.cend()) return ite;
 
         /// Not excist, return after create it.
-        groups[target] = set<int>();
-        groups[target].insert(target);
+        groups[target] = deque<int>();
+        groups[target].push_back(target);
         return groups.find(target);
     }
 
@@ -110,7 +110,7 @@ public :
 class Network {
 
     uint64_t const maxUseful;
-    list<uint64_t> scores;
+    deque<uint64_t> scores;
     uint64_t currentUseful;
     UnionFind unionFind;
     
@@ -145,7 +145,7 @@ public :
         scores.erase(end);
 
         // insert max useful after reversing
-        scores.reverse();
+        reverse(scores.begin(), scores.end());
         scores.push_back(maxUseful);
     }
 
